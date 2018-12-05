@@ -3,10 +3,13 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\AccountRepository")
+ * @UniqueEntity("username", message="This username is already in use.")
  */
 class Account implements UserInterface
 {
@@ -19,6 +22,16 @@ class Account implements UserInterface
 
     /**
      * @ORM\Column(type="string", length=180, unique=true)
+     * @Assert\NotBlank(message = "Please enter a nickname.")
+     * @Assert\Length(
+     *     min= 3,
+     *     max= 20,
+     *     minMessage="Your nickname must have minimum 3 characters.",
+     *     maxMessage="Your nickname can not have more than 20 characters.")
+     * @Assert\Regex(
+     *     pattern="/^[a-zA-Z0-9]+$/",
+     *     message="You can only use a-z, A-Z, 0-9 characters."
+     * )
      */
     private $username;
 
@@ -32,6 +45,16 @@ class Account implements UserInterface
      * @ORM\Column(type="string")
      */
     private $password;
+
+    /**
+     * @Assert\NotBlank(message = "Please enter a password.")
+     * @Assert\Length(
+     *     min= 3,
+     *     max= 20,
+     *     minMessage="Your password must have minimum 6 characters.",
+     *     maxMessage="Your password can not have more than 40 characters.")
+     */
+    private $plainPassword;
 
     public function getId(): ?int
     {
@@ -89,6 +112,18 @@ class Account implements UserInterface
         return $this;
     }
 
+    public function setPlainPassword(string $plainPassword): self
+    {
+        $this->plainPassword = $plainPassword;
+
+        return $this;
+    }
+
+    public function getPlainPassword()
+    {
+        return $this->plainPassword;
+    }
+
     /**
      * @see UserInterface
      */
@@ -103,6 +138,6 @@ class Account implements UserInterface
     public function eraseCredentials()
     {
         // If you store any temporary, sensitive data on the user, clear it here
-        // $this->plainPassword = null;
+         $this->plainPassword = null;
     }
 }
