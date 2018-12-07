@@ -9,6 +9,7 @@
         "doctrine/doctrine-fixtures-bundle": "^3.0",
         "fzaninotto/faker": "^1.8",
         "guzzlehttp/guzzle": "~6.0",
+        "lexik/jwt-authentication-bundle": "^2.6",
         "nelmio/cors-bundle": "^1.5",
         "sensio/framework-extra-bundle": "^5.2",
         "symfony/console": "*",
