@@ -1,0 +1,3 @@
+parameters:
+  locale: 'en'
+  images_host: "%env(resolve:IMAGES_HOST_TEST)%"

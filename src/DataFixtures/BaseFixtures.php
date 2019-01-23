@@ -42,7 +42,7 @@ abstract class BaseFixtures extends Fixture
 
             $this->manager->persist($entity);
 
-            $this->addReference(sprintf('%s_%d', $groupName, $i), $entity);
+            $this->setReference(sprintf('%s_%d', $groupName, $i), $entity);
         }
     }
 }

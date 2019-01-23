@@ -1,0 +1,5 @@
+oneup_flysystem:
+  adapters:
+    default_adapter:
+      local:
+        directory: "%kernel.project_dir%/tests/tmp"

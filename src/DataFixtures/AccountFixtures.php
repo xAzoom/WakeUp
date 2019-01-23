@@ -22,7 +22,7 @@ class AccountFixtures extends BaseFixtures
 
     public function loadData(ObjectManager $manager)
     {
-        $this->createMany(3, 'main_account', function ($i) {
+        $this->createMany(1, 'account', function ($i) {
            $account = new Account();
            $account->setUsername('account_'.$i);
            $account->setPassword($this->passwordEncoder->encodePassword($account, 'test'));

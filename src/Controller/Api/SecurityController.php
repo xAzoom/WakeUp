@@ -3,63 +3,46 @@
 namespace App\Controller\Api;
 
 use App\Entity\Account;
+use App\Exception\InvalidDataException;
 use App\Form\RegisterUserType;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Form\FormInterface;
-use Symfony\Component\HttpFoundation\JsonResponse;
+use FOS\RestBundle\Controller\AbstractFOSRestController;
+use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
+use Lexik\Bundle\JWTAuthenticationBundle\Encoder\LcobucciJWTEncoder;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-class SecurityController extends AbstractController
+class SecurityController extends AbstractFOSRestController
 {
     /**
-     * @Route("/api/register", name="api_register", methods={"POST", "GET"})
+     * @Route("/api/register", name="api_register", methods={"POST"})
      */
     public function register(
-        Request $request, ValidatorInterface $validator,
+        Request $request,
         EntityManagerInterface $entityManager,
         UserPasswordEncoderInterface $passwordEncoder
     )
     {
         $account = new Account();
         $data = json_decode($request->getContent(), true);
+        if($data === null) {
+            throw new InvalidDataException(400, 'Invalid json message received');
+        }
 
         $form = $this->createForm(RegisterUserType::class, $account);
-
         $form->submit($data);
 
         if ($form->isSubmitted() && !$form->isValid()) {
-            $errors = $this->getErrorsFromForm($form);
-            return new JsonResponse($errors, 400);
+            return $this->view($form, Response::HTTP_BAD_REQUEST);
         }
 
         $account->setPassword($passwordEncoder->encodePassword($account, $account->getPlainPassword()));
         $account->eraseCredentials();
-
         $entityManager->persist($account);
         $entityManager->flush();
 
-        return new JsonResponse("", 201);
-    }
-
-    private function getErrorsFromForm(FormInterface $form): array
-    {
-        $errors = [];
-        foreach ($form->getErrors() as $error) {
-            $errors[] = $error->getMessage();
-        }
-
-        foreach ($form->all() as $childForm) {
-            if ($childForm instanceof FormInterface) {
-                if ($childErrors = $this->getErrorsFromForm($childForm)) {
-                    $errors[$childForm->getName()] = $childErrors;
-                }
-            }
-        }
-
-        return $errors;
+        return $this->view($account, Response::HTTP_CREATED);
     }
 }

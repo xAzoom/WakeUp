@@ -8,7 +8,10 @@
 
 namespace App\Tests;
 
-
+use App\DataFixtures\AccountFixtures;
+use App\DataFixtures\CategoryFixtures;
+use App\DataFixtures\PhotoFixtures;
+use App\DataFixtures\PostFixtures;
 use App\Entity\Account;
 use Doctrine\Common\DataFixtures\Purger\ORMPurger;
 use Doctrine\ORM\EntityManagerInterface;
@@ -19,10 +22,18 @@ class ApiTestCase extends KernelTestCase
 {
     private static $staticClient;
 
+    private $responseAsserter;
+
     /**
      * @var Client
      */
     protected $client;
+
+    private $token;
+
+    protected $fixtures = [];
+
+    private static $fixturesFactory = [];
 
     public static function setUpBeforeClass()
     {
@@ -36,19 +47,39 @@ class ApiTestCase extends KernelTestCase
             ],
         ]);
 
+        self::$staticClient->post('api/login');
         self::bootKernel(['environment' => 'test']);
+
+        $fixtures = [AccountFixtures::class, CategoryFixtures::class, PhotoFixtures::class, PostFixtures::class];
+        $factory = self::$kernel->getContainer()->get('fixtures.factory');
+        foreach ($fixtures as $fixture) {
+            self::$fixturesFactory[$fixture] = $factory->createFixture($fixture);
+        }
     }
 
     protected function tearDown()
     {
-        // purposefully not calling parent class, which shuts down the kernel
     }
 
     protected function setUp(): void
     {
         $this->client = self::$staticClient;
-
+        $this->fixtures = self::$fixturesFactory;
         $this->purgeDatabase();
+    }
+
+    protected function getAuthorizedHeaders(array $headers = []): array
+    {
+        if (!$this->getEntityManager()->getRepository(Account::class)->findBy(['username' => 'account_0'])) {
+            $this->loadFixture(AccountFixtures::class);
+        }
+
+        $token = $this->getService('lexik_jwt_authentication.encoder')
+            ->encode(['username' => "account_0"]);
+
+        $headers['Authorization'] = 'Bearer ' . $token;
+
+        return $headers;
     }
 
     private function purgeDatabase(): void
@@ -57,8 +88,40 @@ class ApiTestCase extends KernelTestCase
         $ORMpurge->purge();
     }
 
-    public function getService($id)
+    protected function getService($id)
     {
         return self::$kernel->getContainer()->get($id);
+    }
+
+    protected function getParameter($param)
+    {
+        return self::$kernel->getContainer()->getParameter($param);
+    }
+
+    protected function getEntityManager(): EntityManagerInterface
+    {
+        return $this->getService('doctrine.orm.entity_manager');
+    }
+
+    protected function loadFixture(string $className)
+    {
+        if (!isset($this->fixtures[$className])) {
+            $factory = $this->getService('fixtures.factory');
+            $this->fixtures[$className] = $factory->createFixture($className);
+        }
+
+        $fixture = $this->fixtures[$className];
+        $fixture->load($this->getEntityManager());
+    }
+
+    /**
+     * @return ResponseAsserter
+     */
+    protected function asserter()
+    {
+        if ($this->responseAsserter === null) {
+            $this->responseAsserter = new ResponseAsserter();
+        }
+        return $this->responseAsserter;
     }
 }

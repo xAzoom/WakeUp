@@ -1,0 +1,20 @@
+App\Entity\Post:
+  properties:
+    id:
+      groups: [default, category]
+    title:
+      groups: [default, category]
+    photoLink:
+      groups: [default, category]
+    category:
+      exclude: true
+    photo:
+      exclude: true
+    author:
+      exclude: true
+
+  virtual_properties:
+    getCategoryName:
+      serialized_name: category
+      groups: [default]
+

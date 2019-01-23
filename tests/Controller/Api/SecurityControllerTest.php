@@ -8,7 +8,6 @@
 
 namespace App\Tests\Controller\Api;
 
-use App\Entity\Account;
 use App\Tests\ApiTestCase;
 
 class SecurityControllerTest extends ApiTestCase
@@ -20,23 +19,70 @@ class SecurityControllerTest extends ApiTestCase
             'password' => 'testtest',
         ];
 
-        $respone = $this->client->post('api/register', [
+        $response = $this->client->post('api/register', [
             'body' => json_encode($data),
         ]);
 
-        $this->assertEquals(201, $respone->getStatusCode());
+        $this->assertEquals(201, $response->getStatusCode());
+        $this->asserter()->assertResponsePropertyEquals($response, "username", "test2");
     }
 
-    public function testRegisterValidationErrors() {
+    /**
+     * @dataProvider registerValidationProvider
+     * @throws \Exception
+     */
+    public function testRegisterValidationErrors($username, $password, $expected)
+    {
         $data = [
-            'username' => '',
-            'password' => 'testtest',
+            'username' => $username,
+            'password' => $password,
         ];
 
-        $respone = $this->client->post('api/register', [
+        $response = $this->client->post('api/register', [
             'body' => json_encode($data),
         ]);
 
-        $this->assertEquals(400, $respone->getStatusCode());
+        $this->assertEquals(400, $response->getStatusCode());
+        $this->asserter()->assertResponsePropertiesExist($response, array_keys($expected));
+        foreach ($expected as $key => $value) {
+            $this->asserter()->assertResponsePropertyEquals($response, $key, $value);
+        }
+    }
+
+    public function testInvalidJson()
+    {
+        $invalidBody = <<<EOF
+{
+    "avatarNumber" : "2
+    "tagLine": "I'm from a test!"
+}
+EOF;
+
+        $response = $this->client->post('api/register', [
+            'body' => $invalidBody,
+        ]);
+
+        $this->assertEquals(400, $response->getStatusCode());
+        $this->asserter()->assertResponsePropertyEquals($response, "code", 400);
+        $this->asserter()->assertResponsePropertyEquals($response, "message", "Invalid json message received");
+    }
+
+    public function registerValidationProvider()
+    {
+        return [
+            ['', 'testtest', [
+                "message" => "Validation Failed",
+                "errors.children.username.errors[0]" => "Please enter a nickname.",
+            ]],
+            ['username', '', [
+                "message" => "Validation Failed",
+                "errors.children.password.errors[0]" => "Please enter a password.",
+            ]],
+            ['', '', [
+                "message" => "Validation Failed",
+                "errors.children.username.errors[0]" => "Please enter a nickname.",
+                "errors.children.password.errors[0]" => "Please enter a password.",
+            ]],
+        ];
     }
 }

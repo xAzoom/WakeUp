@@ -1,0 +1,10 @@
+App\Entity\Category:
+  properties:
+    id:
+      groups: [default, category]
+    name:
+      groups: [default, category]
+    slug:
+      groups: [default, category]
+    posts:
+      exclude: true
